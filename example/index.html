@@ -1,0 +1,133 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Context Menu</title>
+    <link rel="stylesheet" type="text/css" href="context-menu.css">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="context-menu.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+        #options1,
+        #options2 {
+            border-radius: 4px;
+            padding: 15px;
+            margin: 7px;
+            display: inline-block;
+            box-shadow: 0 0 10px rgba(0, 0, 0, .2)
+        }
+
+        .card {
+            background-color: rgba(0, 255, 0, .05);
+            box-shadow:  0 0 8px rgba(0, 155, 0, .5);
+            border-radius: 4px; 
+            padding: 15px;
+            margin: 7px;
+            display: inline-block
+        }
+
+        .card.closed {
+            background-color: rgba(255, 0, 0, .05);
+            box-shadow: 0 0 8px rgba(200, 0, 0, .5);
+        }
+    </style>
+</head>
+
+<body>
+    <main role="main" class="container">
+        <h1 class="mt-5">Context Menu</h1>
+
+        <div id="options1">ID:
+            Options1<br />
+            ContextMenu: #options1<br />
+            Exclude: Nothing<br />
+            <strong>3 options</strong>
+        </div>
+
+        <br />
+        <hr>
+        <br />
+
+        <div id="card-1" class="card" data-id="card111">ID: card-1<br />
+            ContextMenu: .card<br />
+            Exclude: .closed
+        </div>
+
+        <div id="card-2" class="card closed" data-id="card222">ID: card-2<br />
+            ContextMenu: .card.closed<br />
+            Exclude: Nothing
+        </div>
+
+        <div id="card-3" class="card closed" data-id="card333">ID: card-3<br />
+            ContextMenu: .card.closed<br />
+            Exclude: Nothing
+        </div>
+
+        <div id="card-4" class="card" data-id="card444">ID: card-4<br />
+            ContextMenu: .card<br />
+            Exclude: .closed
+        </div>
+
+        <div id="card-5" class="card closed" data-id="card555">ID: card-5<br />
+            ContextMenu: .card.closed<br />
+            Exclude: Nothing
+        </div>
+    </main>
+    <script type="text/javascript">
+        // item syntax: addItem(text, action, cssClass)
+
+        // For #options1 without excluding
+        let menu = new ContextMenu("#options1");
+        menu.addItem("View", "view");
+        menu.addItem("Share", "share-fb");
+        // Use 'text-danger' class on option
+        menu.addItem("Delete", "delete", "text-danger");
+        menu.initiate();
+
+        // For .card excluding .closed
+        let menuCardOpen = new ContextMenu(".card", ".closed");
+        menuCardOpen.addItem("View", "view");
+        menuCardOpen.addItem("Close", "close");
+        menuCardOpen.addItem("Delete", "delete", "text-danger");
+        menuCardOpen.initiate();
+
+        // For .card.closed
+        let menuCardClosed = new ContextMenu(".card.closed");
+        menuCardClosed.addItem("View", "view");
+        menuCardClosed.addItem("Re-open", "reopen", "text-success");
+        menuCardClosed.addItem("Delete", "delete", "text-danger");
+        menuCardClosed.initiate();
+
+        $(document).on("click", "[data-action='view']", (e) => {
+            // The event target data-id attribute will store custom attributes
+            // (from the element in context-menu, when data-id is present)
+            let dbId = $(e.target).data("id");
+            alert("View option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
+        });
+
+        $(document).on("click", "[data-action='share-fb']", (e) => {
+            let dbId = $(e.target).data("id");
+            alert("Share option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
+        });
+
+        $(document).on("click", "[data-action='delete']", (e) => {
+            let dbId = $(e.target).data("id");
+            alert("Delete option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
+        });
+
+        $(document).on("click", "[data-action='close']", (e) => {
+            let dbId = $(e.target).data("id");
+            alert("Close option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
+        });
+
+        $(document).on("click", "[data-action='reopen']", (e) => {
+            let dbId = $(e.target).data("id");
+            alert("Re-open option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
+        });
+    </script>
+</body>
+
+</html>
