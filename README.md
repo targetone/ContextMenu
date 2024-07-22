@@ -15,7 +15,7 @@ ContextMenu.js é uma API JavaScript simples e leve para customizar o seu própr
 
 Primeiro, inclua a biblioteca ContextMenu.js no seu projeto.
 
-```
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -35,7 +35,7 @@ Primeiro, inclua a biblioteca ContextMenu.js no seu projeto.
 
 Para iniciar um novo menu de contexto, você precisa criar uma instância da classe `ContextMenu`:
 
-```
+```javascript
 const menu = new ContextMenu(selector, exclude);
 ```
 
@@ -46,7 +46,7 @@ const menu = new ContextMenu(selector, exclude);
 
 Para adicionar itens ao menu de contexto, use o método `addItem`:
 
-```
+```javascript
 menu.addItem('Nome do Item', 'acaoDoItem', 'classeOpcional');
 ```
 
@@ -58,7 +58,7 @@ menu.addItem('Nome do Item', 'acaoDoItem', 'classeOpcional');
 
 Para remover itens do menu de contexto, use o método `removeItem`:
 
-```
+```javascript
 menu.removeItem('acaoDoItem');
 ```
 
@@ -70,7 +70,7 @@ menu.removeItem('acaoDoItem');
 
 Este método deve ser chamado para construir e ativar o menu de contexto:
 
-```
+```javascript
 menu.initiate();
 ```
 
@@ -78,7 +78,7 @@ menu.initiate();
 
 Retorna uma lista de objetos representando os itens do menu:
 
-```
+```javascript
 const items = menu.items;
 ```
 
@@ -86,7 +86,7 @@ const items = menu.items;
 
 Retorna o nome único do menu:
 
-```
+```javascript
 const name = menu.name;
 ```
 
@@ -94,7 +94,7 @@ const name = menu.name;
 
 Retorna o seletor CSS atual:
 
-```
+```javascript
 const selector = menu.selector;
 ```
 
@@ -102,7 +102,7 @@ const selector = menu.selector;
 
 Define um novo seletor CSS:
 
-```
+```javascript
 menu.selector = 'novoSeletor';
 ```
 
@@ -110,7 +110,7 @@ menu.selector = 'novoSeletor';
 
 Retorna o seletor CSS de exclusão atual:
 
-```
+```javascript
 const exclude = menu.exclude;
 ```
 
@@ -118,7 +118,7 @@ const exclude = menu.exclude;
 
 Define um novo seletor CSS de exclusão:
 
-```
+```javascript
 menu.exclude = 'novoExcluido';
 ```
 
