@@ -1,6 +1,6 @@
 # ContextMenu.js
 
-ContextMenu.js é uma API JavaScript simples e leve para customizar o seu próprio Context Menu.
+ContextMenu.js é uma biblioteca JavaScript simples e leve para customizar o seu próprio Context Menu.
 
 ## Funcionalidades
 
