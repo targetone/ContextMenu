@@ -1,15 +1,23 @@
-﻿.context-menu {
+/*
+ * O menu usa position: fixed porque a biblioteca posiciona com clientX/clientY,
+ * coordenadas relativas ao viewport. Assim, scroll e limites da janela usam a
+ * mesma referência e o cálculo permanece previsível.
+ */
+.context-menu {
     display: none;
-    position: absolute;
+    position: fixed;
     z-index: 1071;
-    padding: 9px 0;
     width: 200px;
+    max-width: calc(100vw - 8px);
+    padding: 9px 0;
+    box-sizing: border-box;
     background-color: #fff;
     border: solid 1px rgba(0, 0, 0, .1);
     border-radius: 3px;
-    box-shadow: rgba(0,0,0,.3) 0px 7px 25px;
+    box-shadow: rgba(0, 0, 0, .3) 0 7px 25px;
 }
 
+/* A classe de estado é controlada exclusivamente pela instância ContextMenu. */
 .context-menu--active {
     display: block;
 }
@@ -22,24 +30,37 @@
 
 .context-menu__item {
     display: block;
-    cursor: pointer;
-    /*margin-bottom: 4px;*/
+    margin: 0;
+    padding: 0;
 }
 
-    .context-menu__item:last-child {
-        margin-bottom: 0;
-    }
-
+/*
+ * Os itens são buttons para manter semântica e foco de teclado, mas o reset abaixo
+ * deixa a aparência neutra para que cada projeto possa personalizar o menu via CSS.
+ */
 .context-menu__link {
     display: block;
+    width: 100%;
     padding: 6px 17px;
+    border: 0;
+    background: transparent;
     color: #222;
+    font: inherit;
+    text-align: left;
     text-decoration: none;
+    cursor: pointer;
 }
 
-    .context-menu__link:hover {
-        color: #222;
-        /*background-color: #0066aa;*/
-        background-color: rgba(235, 235, 235, 1);
-        text-decoration: none;
-    }
+/* Hover e foco compartilham o mesmo feedback visual. */
+.context-menu__link:hover,
+.context-menu__link:focus {
+    background-color: rgba(235, 235, 235, 1);
+    color: #222;
+    text-decoration: none;
+    outline: none;
+}
+
+.context-menu__link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+}

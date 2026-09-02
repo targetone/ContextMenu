@@ -1,127 +1,106 @@
 # ContextMenu.js
 
-ContextMenu.js é uma biblioteca JavaScript simples e leve para customizar o seu próprio Context Menu.
+ContextMenu.js é uma biblioteca JavaScript simples e leve para criar menus de contexto personalizados em aplicações que já utilizam jQuery.
+
+## Dependências
+
+- jQuery deve ser carregado antes de `context-menu.js`.
+- Nos sistemas da empresa, a função global `getUniqueID(prefix)` é a geradora de ID preferencial e será utilizada quando estiver disponível.
+- Para não quebrar um consumidor que não exponha `getUniqueID`, a biblioteca possui um fallback interno simples e único para a página. O fallback não cria nem sobrescreve `window.getUniqueID`.
 
 ## Funcionalidades
 
-- Criação de menus de contexto personalizados.
-- Adição e remoção dinâmica de itens do menu.
-- Suporte para eventos de clique em itens do menu.
-- Personalização de estilos CSS.
+- Criação de menus de contexto personalizados por seletor CSS.
+- Exclusão de elementos por seletor CSS.
+- Adição e remoção dinâmica de itens, inclusive depois de `initiate()`.
+- Ações identificadas por `data-action`, mantendo integração simples com eventos delegados do jQuery.
+- Propagação opcional de `data-id` do elemento em contexto para o item clicado.
+- Fechamento por clique externo, `Escape`, resize, scroll e perda de foco da janela.
+- Navegação entre opções com as setas para cima e para baixo quando o menu está aberto.
+- Método `destroy()` para remover DOM e listeners registrados pela instância.
 
-## Como Usar
+## Como usar
 
-### Inclusão da Biblioteca
-
-Primeiro, inclua a biblioteca ContextMenu.js no seu projeto.
+### Inclusão da biblioteca
 
 ```html
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo ContextMenu.js</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <!-- Seu conteúdo aqui -->
-    <script src="ContextMenu.js"></script>
-</body>
-</html>
+<link rel="stylesheet" href="context-menu.css">
+<script src="jquery.min.js"></script>
+<script src="context-menu.js"></script>
 ```
 
 ### Inicialização
 
-Para iniciar um novo menu de contexto, você precisa criar uma instância da classe `ContextMenu`:
-
 ```javascript
-const menu = new ContextMenu(selector, exclude);
+const menu = new ContextMenu(".card", ".closed");
 ```
 
-- `selector`: Seletor CSS dos elementos onde o menu de contexto será ativado.
-- `exclude`: (Opcional) Seletor CSS dos elementos que serão excluídos do menu de contexto.
+- `selector`: seletor CSS dos elementos onde o menu será ativado.
+- `exclude`: seletor CSS opcional para elementos que não devem ativar o menu.
 
-### Adicionar Itens
-
-Para adicionar itens ao menu de contexto, use o método `addItem`:
+### Adicionar itens
 
 ```javascript
-menu.addItem('Nome do Item', 'acaoDoItem', 'classeOpcional');
-```
-
-- `Nome do Item`: O nome que será exibido no menu.
-- `acaoDoItem`: A ação que será associada ao item.
-- `classeOpcional`: (Opcional) Classe CSS adicional para estilizar o item.
-
-### Remover Itens
-
-Para remover itens do menu de contexto, use o método `removeItem`:
-
-```javascript
-menu.removeItem('acaoDoItem');
-```
-
-- `acaoDoItem`: A ação do item que você deseja remover.
-
-### Métodos
-
-#### `initiate()`
-
-Este método deve ser chamado para construir e ativar o menu de contexto:
-
-```javascript
+menu.addItem("Visualizar", "view");
+menu.addItem("Excluir", "delete", "text-danger");
 menu.initiate();
 ```
 
-#### `get items()`
-
-Retorna uma lista de objetos representando os itens do menu:
+O segundo argumento é armazenado em `data-action`. A biblioteca não executa regras de negócio diretamente; o projeto consumidor decide como tratar cada ação:
 
 ```javascript
-const items = menu.items;
+$(document).on("click", "[data-action='view']", function (event) {
+    const id = $(event.currentTarget).data("id");
+    console.log("Visualizar", id);
+});
 ```
 
-#### `get name()`
+Quando o elemento em contexto possui `data-id` — nele próprio ou em um descendente — o valor é copiado para o botão do menu.
 
-Retorna o nome único do menu:
+### Adicionar e remover itens dinamicamente
+
+Depois de `initiate()`, `addItem()` e `removeItem()` atualizam o menu já renderizado:
 
 ```javascript
-const name = menu.name;
+menu.addItem("Compartilhar", "share");
+menu.removeItem("delete");
 ```
 
-#### `get selector()`
-
-Retorna o seletor CSS atual:
+### Propriedades
 
 ```javascript
-const selector = menu.selector;
+menu.name;       // ID único do menu
+menu.selector;   // seletor atual
+menu.exclude;    // seletor de exclusão atual
+menu.items;      // cópia da lista de itens
 ```
 
-#### `set selector(selector)`
-
-Define um novo seletor CSS:
+O seletor de exclusão pode ser limpo:
 
 ```javascript
-menu.selector = 'novoSeletor';
+menu.exclude = "";
 ```
 
-#### `get exclude()`
+### Destruir uma instância
 
-Retorna o seletor CSS de exclusão atual:
+Use `destroy()` quando a tela ou componente não precisar mais do menu:
 
 ```javascript
-const exclude = menu.exclude;
+menu.destroy();
 ```
 
-#### `set exclude(exclude)`
+Isso remove o menu do DOM e os eventos registrados pela instância. A mesma instância pode ser iniciada novamente chamando `initiate()`.
 
-Define um novo seletor CSS de exclusão:
+## Observações
 
-```javascript
-menu.exclude = 'novoExcluido';
-```
+- O menu usa `position: fixed`, então o posicionamento é calculado em relação ao viewport e permanece correto em páginas com scroll.
+- O código não depende de `taphold` ou jQuery Mobile. Em dispositivos que disparam o evento nativo `contextmenu`, ele será tratado normalmente.
+- `getUniqueID` continua sendo respeitado quando já existe no sistema; o fallback interno serve apenas para tornar a biblioteca segura quando essa função não estiver disponível.
+
+## Exemplo
+
+Veja `example/index.html`.
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT.
+MIT.

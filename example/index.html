@@ -1,133 +1,324 @@
 <!DOCTYPE HTML>
-<html>
-
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8" />
-    <title>Context Menu</title>
-    <link rel="stylesheet" type="text/css" href="context-menu.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContextMenu.js — Demo</title>
+
+    <!--
+        A demo usa os arquivos reais da raiz do projeto.
+        Isso evita manter uma segunda cópia da biblioteca apenas para o exemplo,
+        que poderia ficar diferente da versão distribuída.
+    -->
+    <link rel="stylesheet" href="../context-menu.css">
+
+    <!-- Fonte usada somente para deixar a página de demonstração mais agradável. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- ContextMenu.js depende de jQuery. Ele deve ser carregado antes da biblioteca. -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"
         integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-    <script src="context-menu.min.js"></script>
+    <script src="../context-menu.js"></script>
+
+    <!-- Bootstrap é usado somente na apresentação desta demo; não é dependência da biblioteca. -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1Q784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
     <style>
-        #options1,
-        #options2 {
-            border-radius: 4px;
-            padding: 15px;
-            margin: 7px;
+        /*
+         * Estilos exclusivos da página de demonstração.
+         * O menu de contexto em si continua sendo estilizado por ../context-menu.css.
+         */
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: #f7f8fb;
+            color: #28303d;
+            font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .demo-container {
+            width: calc(100% - 32px);
+            max-width: 980px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-top: 48px;
+            padding-bottom: 64px;
+        }
+
+        .demo-header {
+            margin-bottom: 36px;
+        }
+
+        .demo-header h1 {
+            margin-bottom: 8px;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .demo-header p {
+            max-width: 720px;
+            margin-bottom: 0;
+            color: #657083;
+            font-size: 1.05rem;
+        }
+
+        .demo-section {
+            margin-top: 24px;
+            padding: 24px;
+            background: #fff;
+            border: 1px solid #e7eaf0;
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(32, 44, 65, .06);
+        }
+
+        .demo-section h2 {
+            margin-bottom: 6px;
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .demo-description {
+            margin-bottom: 20px;
+            color: #737d8e;
+        }
+
+        .demo-target,
+        .card {
             display: inline-block;
-            box-shadow: 0 0 10px rgba(0, 0, 0, .2)
+            margin: 7px;
+            padding: 16px 18px;
+            vertical-align: top;
+            border-radius: 8px;
+            cursor: context-menu;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+        /*
+         * Classes passadas no terceiro argumento de addItem() são adicionadas
+         * diretamente ao item do menu. Isso permite customizar ações específicas
+         * sem alterar o CSS base da biblioteca.
+         */
+        .context-menu__link.demo-action-danger {
+            color: #c43d4f;
+        }
+
+        .context-menu__link.demo-action-danger:hover {
+            color: #a92f40;
+            background-color: #fff0f2;
+        }
+
+        .demo-target:hover,
+        .card:hover {
+            transform: translateY(-1px);
+        }
+
+        .demo-target {
+            background: #f8f9fb;
+            border: 1px solid #dce1e8;
+            box-shadow: 0 3px 10px rgba(32, 44, 65, .08);
         }
 
         .card {
-            background-color: rgba(0, 255, 0, .05);
-            box-shadow:  0 0 8px rgba(0, 155, 0, .5);
-            border-radius: 4px; 
-            padding: 15px;
-            margin: 7px;
-            display: inline-block
+            min-width: 190px;
+            background: #f4fbf6;
+            border: 1px solid #cfe8d5;
+            box-shadow: 0 3px 10px rgba(34, 122, 62, .10);
         }
 
         .card.closed {
-            background-color: rgba(255, 0, 0, .05);
-            box-shadow: 0 0 8px rgba(200, 0, 0, .5);
+            background: #fff6f6;
+            border-color: #f0d1d1;
+            box-shadow: 0 3px 10px rgba(170, 53, 53, .08);
+        }
+
+        .demo-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+
+        .demo-meta {
+            color: #687386;
+            font-size: .92rem;
+            line-height: 1.65;
+        }
+
+        .demo-meta code {
+            color: #48566d;
+            background: #eef1f5;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        .demo-tip {
+            display: inline-block;
+            margin-top: 14px;
+            padding: 7px 10px;
+            background: #eef4ff;
+            color: #405c8a;
+            border-radius: 6px;
+            font-size: .9rem;
+            font-weight: 700;
         }
     </style>
 </head>
-
 <body>
-    <main role="main" class="container">
-        <h1 class="mt-5">Context Menu</h1>
+    <main role="main" class="container demo-container">
+        <header class="demo-header">
+            <h1>ContextMenu.js</h1>
+            <p>
+                Uma demonstração simples dos seletores, exclusões e ações disponíveis.
+                Clique com o botão direito nos elementos abaixo para abrir o menu correspondente.
+            </p>
+            <span class="demo-tip">Dica: use o botão direito do mouse sobre os blocos.</span>
+        </header>
 
-        <div id="options1">ID:
-            Options1<br />
-            ContextMenu: #options1<br />
-            Exclude: Nothing<br />
-            <strong>3 options</strong>
-        </div>
+        <!--
+            Exemplo 1:
+            um único seletor recebe um menu sem nenhuma regra de exclusão.
+        -->
+        <section class="demo-section">
+            <h2>Menu em um elemento específico</h2>
+            <p class="demo-description">
+                O menu abaixo responde apenas ao elemento <code>#options1</code> e possui três ações.
+            </p>
 
-        <br />
-        <hr>
-        <br />
+            <div id="options1" class="demo-target">
+                <span class="demo-label">Options 1</span>
+                <div class="demo-meta">
+                    Selector: <code>#options1</code><br>
+                    Exclude: <code>nenhum</code><br>
+                    Itens: <strong>View, Share, Delete</strong>
+                </div>
+            </div>
+        </section>
 
-        <div id="card-1" class="card" data-id="card111">ID: card-1<br />
-            ContextMenu: .card<br />
-            Exclude: .closed
-        </div>
+        <!--
+            Exemplo 2:
+            os cards demonstram duas instâncias coexistindo na mesma página.
 
-        <div id="card-2" class="card closed" data-id="card222">ID: card-2<br />
-            ContextMenu: .card.closed<br />
-            Exclude: Nothing
-        </div>
+            - .card recebe o menu de cards abertos, mas exclui .closed.
+            - .card.closed recebe outro menu, próprio para cards fechados.
 
-        <div id="card-3" class="card closed" data-id="card333">ID: card-3<br />
-            ContextMenu: .card.closed<br />
-            Exclude: Nothing
-        </div>
+            O atributo data-id é copiado para o item do menu que foi clicado,
+            permitindo descobrir qual registro originou a ação.
+        -->
+        <section class="demo-section">
+            <h2>Menus diferentes para estados diferentes</h2>
+            <p class="demo-description">
+                Cards abertos e fechados compartilham a mesma estrutura, mas recebem menus diferentes
+                usando <code>selector</code> e <code>exclude</code>.
+            </p>
 
-        <div id="card-4" class="card" data-id="card444">ID: card-4<br />
-            ContextMenu: .card<br />
-            Exclude: .closed
-        </div>
+            <div id="card-1" class="card" data-id="card111">
+                <span class="demo-label">Card 1 · aberto</span>
+                <div class="demo-meta">
+                    Selector: <code>.card</code><br>
+                    Exclude: <code>.closed</code><br>
+                    data-id: <code>card111</code>
+                </div>
+            </div>
 
-        <div id="card-5" class="card closed" data-id="card555">ID: card-5<br />
-            ContextMenu: .card.closed<br />
-            Exclude: Nothing
-        </div>
+            <div id="card-2" class="card closed" data-id="card222">
+                <span class="demo-label">Card 2 · fechado</span>
+                <div class="demo-meta">
+                    Selector: <code>.card.closed</code><br>
+                    Exclude: <code>nenhum</code><br>
+                    data-id: <code>card222</code>
+                </div>
+            </div>
+
+            <div id="card-3" class="card closed" data-id="card333">
+                <span class="demo-label">Card 3 · fechado</span>
+                <div class="demo-meta">
+                    Selector: <code>.card.closed</code><br>
+                    Exclude: <code>nenhum</code><br>
+                    data-id: <code>card333</code>
+                </div>
+            </div>
+
+            <div id="card-4" class="card" data-id="card444">
+                <span class="demo-label">Card 4 · aberto</span>
+                <div class="demo-meta">
+                    Selector: <code>.card</code><br>
+                    Exclude: <code>.closed</code><br>
+                    data-id: <code>card444</code>
+                </div>
+            </div>
+
+            <div id="card-5" class="card closed" data-id="card555">
+                <span class="demo-label">Card 5 · fechado</span>
+                <div class="demo-meta">
+                    Selector: <code>.card.closed</code><br>
+                    Exclude: <code>nenhum</code><br>
+                    data-id: <code>card555</code>
+                </div>
+            </div>
+        </section>
     </main>
-    <script type="text/javascript">
-        // item syntax: addItem(text, action, cssClass)
 
-        // For #options1 without excluding
-        let menu = new ContextMenu("#options1");
+    <script>
+        /*
+         * Exemplo 1 — menu de um elemento específico.
+         *
+         * A chamada segue a API mínima da biblioteca:
+         *   1. cria a instância com o selector;
+         *   2. registra os itens;
+         *   3. chama initiate() para montar o DOM e registrar os eventos.
+         */
+        const menu = new ContextMenu("#options1");
         menu.addItem("View", "view");
         menu.addItem("Share", "share-fb");
-        // Use 'text-danger' class on option
-        menu.addItem("Delete", "delete", "text-danger");
+        // O terceiro argumento é uma classe CSS opcional usada para customizar este item.
+        menu.addItem("Delete", "delete", "demo-action-danger");
         menu.initiate();
 
-        // For .card excluding .closed
-        let menuCardOpen = new ContextMenu(".card", ".closed");
+        /*
+         * Exemplo 2 — cards abertos.
+         *
+         * O segundo argumento é um selector de exclusão. Neste caso,
+         * qualquer elemento que também tenha .closed é ignorado por esta instância.
+         */
+        const menuCardOpen = new ContextMenu(".card", ".closed");
         menuCardOpen.addItem("View", "view");
         menuCardOpen.addItem("Close", "close");
-        menuCardOpen.addItem("Delete", "delete", "text-danger");
+        // A mesma classe pode ser reutilizada em qualquer item que precise do mesmo estilo.
+        menuCardOpen.addItem("Delete", "delete", "demo-action-danger");
         menuCardOpen.initiate();
 
-        // For .card.closed
-        let menuCardClosed = new ContextMenu(".card.closed");
+        /*
+         * Exemplo 3 — cards fechados.
+         *
+         * Uma segunda instância atende somente .card.closed. Assim, duas regras de
+         * menu podem coexistir sem que a aplicação precise decidir isso no clique.
+         */
+        const menuCardClosed = new ContextMenu(".card.closed");
         menuCardClosed.addItem("View", "view");
         menuCardClosed.addItem("Re-open", "reopen", "text-success");
-        menuCardClosed.addItem("Delete", "delete", "text-danger");
+        menuCardClosed.addItem("Delete", "delete", "demo-action-danger");
         menuCardClosed.initiate();
 
-        $(document).on("click", "[data-action='view']", (e) => {
-            // The event target data-id attribute will store custom attributes
-            // (from the element in context-menu, when data-id is present)
-            let dbId = $(e.target).data("id");
-            alert("View option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
-        });
+        /*
+         * As ações são expostas através de data-action.
+         *
+         * A biblioteca não conhece regras de negócio; ela somente informa qual ação
+         * foi escolhida e, quando existir, qual data-id pertencia ao elemento que
+         * abriu o menu. A aplicação decide o que fazer com essas informações.
+         *
+         * Event delegation mantém um único listener e também funciona para itens
+         * adicionados ao menu dinamicamente depois de initiate().
+         */
+        $(document).on("click", "[data-action]", function (event) {
+            const $action = $(event.currentTarget);
+            const action = $action.data("action");
+            const id = $action.data("id");
 
-        $(document).on("click", "[data-action='share-fb']", (e) => {
-            let dbId = $(e.target).data("id");
-            alert("Share option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
-        });
-
-        $(document).on("click", "[data-action='delete']", (e) => {
-            let dbId = $(e.target).data("id");
-            alert("Delete option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
-        });
-
-        $(document).on("click", "[data-action='close']", (e) => {
-            let dbId = $(e.target).data("id");
-            alert("Close option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
-        });
-
-        $(document).on("click", "[data-action='reopen']", (e) => {
-            let dbId = $(e.target).data("id");
-            alert("Re-open option clicked" + (dbId.length > 0 ? " on card " + dbId : ""));
+            alert(action + (id ? " on card " + id : ""));
         });
     </script>
 </body>
-
 </html>

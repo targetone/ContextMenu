@@ -1,341 +1,418 @@
-﻿class ContextMenu {
+(function (global) {
+    "use strict";
 
-    constructor(selector, exclude = "") {
-        this._name = getUniqueID("context-menu");
-        this._selector = selector;
-        this._exclude = exclude;
-        this._itemName = [];
-        this._itemAction = [];
-        this._itemClass = [];
+    if (!global.jQuery) {
+        throw new Error("ContextMenu.js requires jQuery to be loaded first.");
     }
 
-    get name() {
-        return this._name;
+    var $ = global.jQuery;
+    var fallbackIdCounter = 0;
+    var instanceCounter = 0;
+
+    /*
+     * A empresa já pode fornecer uma função global getUniqueID(prefix).
+     * Quando ela existe e retorna um ID válido, a biblioteca respeita esse contrato.
+     * O fallback abaixo existe apenas para que ContextMenu.js continue funcional em
+     * projetos que não possuam esse helper global.
+     */
+    function createUniqueID(prefix) {
+        if (typeof global.getUniqueID === "function") {
+            var externalId = global.getUniqueID(prefix);
+            if (externalId != null && String(externalId).length > 0 && !document.getElementById(String(externalId))) {
+                return String(externalId);
+            }
+        }
+
+        var id;
+        do {
+            fallbackIdCounter += 1;
+            id = prefix + "-" + Date.now().toString(36) + "-" + fallbackIdCounter.toString(36);
+        } while (document.getElementById(id));
+
+        return id;
     }
 
-    get selector() {
-        return this._selector;
-    }
+    class ContextMenu {
+        /*
+         * selector define onde o menu pode abrir. exclude é opcional e serve para
+         * retirar subconjuntos desse selector sem obrigar o consumidor a criar uma
+         * expressão CSS mais difícil de entender.
+         */
+        constructor(selector, exclude = "") {
+            if (typeof selector !== "string" || selector.trim().length === 0) {
+                throw new Error("ContextMenu requires a non-empty CSS selector.");
+            }
 
-    set selector(selector) {
-        if (selector.length != 0) {
+            this._name = createUniqueID("context-menu");
             this._selector = selector;
-        }
-    }
-
-    get exclude() {
-        return this._exclude;
-    }
-
-    set exclude(exclude) {
-        if (exclude.length != 0) {
-            this._exclude = exclude;
-        }
-    }
-
-    get items() {
-        let key = ['name', 'action', 'class'],
-            names = this._itemName,
-            actions = this._itemAction,
-            classes = this._itemClass,
-            items = [],
-            item = {};
-
-        this._itemAction.forEach(function (k, i) {
-            item[key[0]] = names[i];
-            item[key[1]] = actions[i];
-            item[key[2]] = classes[i];
-            items.push(item);
-            item = {};
-        });
-
-        return items;
-    }
-
-    addItem(name, action, textClass = "") {
-        if (this._itemAction.indexOf(action) >= 0) {
-            throw new Error("There is already one '" + action + "' in the action list.");
+            this._exclude = exclude || "";
+            this._items = [];
+            this._menu = null;
+            this._menuList = null;
+            this._itemInContext = null;
+            this._initiated = false;
+            instanceCounter += 1;
+            this._eventNamespace = ".contextMenu" + instanceCounter;
         }
 
-        this._itemName.push(name);
-        this._itemAction.push(action);
-        this._itemClass.push(textClass);
-    }
-
-    removeItem(action) {
-        let index = this._itemAction.indexOf(action);
-        if (index >= 0) {
-            this._itemName.splice(index, 1);
-            this._itemAction.splice(index, 1);
-            this._itemClass.splice(index, 1);
+        get name() {
+            return this._name;
         }
-    }
 
-    initiate() {
-        /**
-         * Variables (PART ONE).
+        get selector() {
+            return this._selector;
+        }
+
+        set selector(selector) {
+            if (typeof selector === "string" && selector.trim().length > 0) {
+                this._selector = selector;
+            }
+        }
+
+        get exclude() {
+            return this._exclude;
+        }
+
+        set exclude(exclude) {
+            this._exclude = typeof exclude === "string" ? exclude : "";
+        }
+
+        /*
+         * Retorna uma cópia dos itens em vez de expor o array interno.
+         * Assim, alterações feitas no resultado não modificam o estado do menu.
          */
-        var contextMenuClassName = "context-menu";
-        var contextMenuItemClassName = "context-menu__item";
-        var contextMenuLinkClassName = "context-menu__link";
-        var contextMenuActive = "context-menu--active";
-
-        // Build the HTML
-
-        let $menuNav = $("<nav></nav>"),
-            $menuUl = $("<ul></ul>"),
-            idMenu = this._name,
-            elMenu = $("*[id*='" + idMenu + "']");
-
-        if (elMenu.length > 0) {
-            idMenu += "-" + (elMenu.length + 1);
-        }
-
-        for (var i = 0; i < this._itemAction.length; i++) {
-            let $menuLi = $("<li></li>"),
-                $menuA = $("<span></p>");
-
-            $menuLi.addClass(contextMenuItemClassName);
-            $menuA.addClass(contextMenuLinkClassName);
-            $menuA.addClass(this._itemClass[i]);
-            $menuA.attr("data-action", this._itemAction[i]);
-            //$menuA.attr("href", "#");
-            $menuA.text(this._itemName[i]);
-            $menuLi.append($menuA);
-            $menuUl.append($menuLi);
-        }
-
-        $menuNav.attr("id", idMenu);
-        $menuNav.addClass(contextMenuClassName);
-
-        $menuUl.addClass("context-menu__items");
-
-        $menuNav.append($menuUl);
-
-        if (this._itemAction.length > 0) {
-            $("body").append($menuNav);
-        }
-        else {
-            $("body").append($("<div class='d-none'></div>"));
-        }
-
-        // HTML built
-
-        function clickInsideElement(e, selectorF) {
-            var el = e.srcElement || e.target;
-            if ($(el).is(exclude)) {
-                return false;
-            }
-            else if ($(el).is(selectorF)) {
-                return el;
-            } else {
-                while (el = el.parentNode) {
-                    if ($(el).is(exclude)) {
-                        return false;
-                    }
-                    else if ($(el).is(selectorF)) {
-                        return el;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        function getPosition(e) {
-            var posx = 0;
-            var posy = 0;
-
-            if (!e) var e = window.event;
-
-            if (e.pageX || e.pageY) {
-                posx = e.pageX;
-                posy = e.pageY;
-            } else if (e.clientX || e.clientY) {
-                posx = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-                posy = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-            }
-
-
-            return {
-                x: posx,
-                y: posy
-            };
-        }
-
-        var itemInContext;
-        var selector = this._selector;
-        var exclude = this._exclude;
-
-        var clickCoords;
-        var clickCoordsX;
-        var clickCoordsY;
-
-        var menu = $("#" + idMenu);
-        var menuItems = menu.find($(".context-menu__item"));
-        var menuState = 0;
-        var menuWidth;
-        var menuHeight;
-        var menuPosition;
-        var menuPositionX;
-        var menuPositionY;
-
-        var windowWidth;
-        var windowHeight;
-
-        /**
-         * Initialise our application's code.
-         */
-        function init() {
-            contextListener();
-            clickListener();
-            keyupListener();
-            resizeListener();
-        }
-
-        function isTouchDevice() {
-            var prefixes = ' -webkit- -moz- -o- -ms- '.split(' ');
-            var mq = function (query) {
-                return window.matchMedia(query).matches;
-            }
-
-            if (('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch) {
-                return true;
-            }
-
-            // include the 'heartz' as a way to have a non matching MQ to help terminate the join
-            // https://git.io/vznFH
-            var query = ['(', prefixes.join('touch-enabled),('), 'heartz', ')'].join('');
-            return mq(query);
-        }
-
-        /**
-         * Listens for contextmenu events.
-         */
-        function contextListener() {
-            $(document).on("scroll", function () { toggleMenuOff(); });
-            $(document).on("contextmenu", function (e) {
-                fireContext(e);
-            });
-            $(document).on("taphold", function (e) {
-                if (isTouchDevice()) {
-                    fireContext(e);
-                }
+        get items() {
+            return this._items.map(function (item) {
+                return {
+                    name: item.name,
+                    action: item.action,
+                    class: item.className
+                };
             });
         }
 
-        function fireContext(e) {
-            itemInContext = clickInsideElement(e, selector);
-
-            if ($.contains(menu[0], e.target) || menu[0] == e.target) {
-                e.preventDefault();
+        /*
+         * action funciona como identificador público do item e também é exposta em
+         * data-action. Por isso, duas ações iguais no mesmo menu seriam ambíguas.
+         */
+        addItem(name, action, textClass = "") {
+            if (this._items.some(function (item) { return item.action === action; })) {
+                throw new Error("There is already one '" + action + "' in the action list.");
             }
 
-            if (itemInContext) {
-                e.preventDefault();
-                if (menu.length > 0) {
-                    menuItems = menuItems.each(
-                        function (i, j) {
-                            var dataId = $(itemInContext).find("*[data-id]").attr("data-id");
-                            dataId = !dataId ? $(itemInContext).attr("data-id") : dataId;
+            this._items.push({
+                name: name,
+                action: action,
+                className: textClass || ""
+            });
 
-                            $(j).find("." + contextMenuLinkClassName).attr("data-id", (dataId == null ? "": dataId).trim());
-                        }
-                    );
-                    toggleMenuOn();
-                    positionMenu(e);
+            if (this._initiated) {
+                this._renderItems();
+            }
+
+            return this;
+        }
+
+        /* Remove pelo identificador público e mantém o DOM sincronizado se já iniciado. */
+        removeItem(action) {
+            var index = this._items.findIndex(function (item) {
+                return item.action === action;
+            });
+
+            if (index >= 0) {
+                this._items.splice(index, 1);
+                if (this._initiated) {
+                    this._renderItems();
                 }
+            }
+
+            return this;
+        }
+
+        /*
+         * initiate() pode ser chamado novamente com segurança.
+         * Na primeira chamada o menu é montado e os eventos são registrados; nas
+         * chamadas seguintes apenas os itens são sincronizados com o DOM.
+         */
+        initiate() {
+            if (!this._initiated) {
+                this._buildMenu();
+                this._bindEvents();
+                this._initiated = true;
             } else {
-                itemInContext = null;
-                toggleMenuOff();
+                this._renderItems();
+            }
+
+            return this;
+        }
+
+        /*
+         * Remove tudo que pertence exclusivamente a esta instância.
+         * O namespace de eventos evita remover listeners da aplicação ou de outros
+         * ContextMenu existentes na mesma página.
+         */
+        destroy() {
+            $(document).off(this._eventNamespace);
+            $(global).off(this._eventNamespace);
+
+            if (this._menu) {
+                this._menu.off(this._eventNamespace);
+                this._menu.remove();
+            }
+
+            this._menu = null;
+            this._menuList = null;
+            this._itemInContext = null;
+            this._initiated = false;
+
+            return this;
+        }
+
+        /*
+         * O container é criado uma única vez. Os itens ficam em uma lista separada
+         * para que addItem/removeItem consigam redesenhar apenas o conteúdo.
+         */
+        _buildMenu() {
+            this._menu = $("<div></div>")
+                .attr("id", this._name)
+                .attr("aria-hidden", "true")
+                .addClass("context-menu");
+
+            this._menuList = $("<ul></ul>")
+                .attr("role", "menu")
+                .addClass("context-menu__items");
+
+            this._menu.append(this._menuList);
+            $("body").append(this._menu);
+            this._renderItems();
+        }
+
+        /*
+         * Reconstrói apenas os itens, nunca os listeners globais. O texto entra via
+         * .text(), evitando interpretar o nome do item como HTML fornecido pelo usuário.
+         */
+        _renderItems() {
+            var self = this;
+            this._menuList.empty();
+
+            this._items.forEach(function (item) {
+                var $menuItem = $("<li></li>")
+                    .attr("role", "none")
+                    .addClass("context-menu__item");
+
+                var $menuButton = $("<button></button>")
+                    .attr("type", "button")
+                    .attr("role", "menuitem")
+                    .attr("tabindex", "-1")
+                    .attr("data-action", item.action)
+                    .addClass("context-menu__link")
+                    .text(item.name);
+
+                if (item.className) {
+                    $menuButton.addClass(item.className);
+                }
+
+                $menuItem.append($menuButton);
+                self._menuList.append($menuItem);
+            });
+
+            if (this._items.length === 0) {
+                this._hide();
             }
         }
 
-        function clickListener() {
-            $(document).on("click", function (e) {
+        /*
+         * Eventos de document/window são registrados com namespace próprio.
+         * Isso evita sobrescrever handlers globais de resize/keyup e permite que
+         * destroy() desfaça exatamente o que esta instância registrou.
+         */
+        _bindEvents() {
+            var self = this;
+            var namespace = this._eventNamespace;
 
-                var clickeElIsLink = clickInsideElement(e, "." + contextMenuLinkClassName);
-
-                if (clickeElIsLink && $(itemInContext).is(selector) && menu.find(clickeElIsLink).length > 0) {
-                    e.preventDefault();
-                    menuItemListener(clickeElIsLink);
-                } else {
-                    var button = e.which || e.button;
-                    if (button === 1) {
-                        toggleMenuOff();
+            $(document)
+                .on("contextmenu" + namespace, function (event) {
+                    self._handleContextMenu(event);
+                })
+                .on("click" + namespace, function (event) {
+                    if (!self._menu || self._menu.has(event.target).length > 0 || self._menu[0] === event.target) {
+                        return;
                     }
-                }
+                    self._hide();
+                })
+                .on("keydown" + namespace, function (event) {
+                    self._handleKeydown(event);
+                });
+
+            $(global).on("resize" + namespace + " scroll" + namespace + " blur" + namespace, function () {
+                self._hide();
+            });
+
+            this._menu.on("click" + namespace, ".context-menu__link", function () {
+                self._hide();
             });
         }
 
-        $(document).on("lostFocus", function (event) {
-            toggleMenuOff();
-        });
+        /*
+         * Decide se o clique pertence a esta instância. Só bloqueamos o menu nativo
+         * quando encontramos um elemento válido; fora do selector o browser continua
+         * com seu comportamento normal.
+         */
+        _handleContextMenu(event) {
+            if (this._menu && (this._menu[0] === event.target || this._menu.has(event.target).length > 0)) {
+                event.preventDefault();
+                return;
+            }
 
-        function keyupListener() {
-            window.onkeyup = function (e) {
-                if (e.keyCode === 27) {
-                    toggleMenuOff();
+            var item = this._findContextItem(event.target);
+            if (!item || this._items.length === 0) {
+                this._hide();
+                return;
+            }
+
+            event.preventDefault();
+            this._itemInContext = item;
+            this._syncContextDataId();
+            this._show();
+            this._position(event, item);
+        }
+
+        /*
+         * Caminha do elemento clicado até os ancestrais. O exclude tem prioridade:
+         * se qualquer ponto do caminho atender ao selector excluído, este menu não
+         * deve ser aberto para aquele contexto.
+         */
+        _findContextItem(target) {
+            var element = target;
+
+            while (element && element !== document) {
+                if (this._exclude && $(element).is(this._exclude)) {
+                    return null;
                 }
-            };
-        }
-
-        function resizeListener() {
-            window.onresize = function (e) {
-                toggleMenuOff();
-            };
-        }
-
-        function toggleMenuOn() {
-            if (menu.length > 0) {
-                if (menuState !== 1) {
-                    menuState = 1;
-                    menu.addClass(contextMenuActive);
+                if ($(element).is(this._selector)) {
+                    return element;
                 }
+                element = element.parentNode;
             }
+
+            return null;
         }
 
-        function toggleMenuOff() {
-            if (menuState !== 0) {
-                menuState = 0;
-                $(menu).removeClass(contextMenuActive);
-                $(menu).attr("style", "");
+        /*
+         * Quando o elemento em contexto possui data-id, o valor é copiado para cada
+         * ação do menu. Também atualizamos o cache do .data() do jQuery, pois mudar
+         * apenas o atributo depois de uma leitura anterior pode devolver valor antigo.
+         */
+        _syncContextDataId() {
+            var $contextItem = $(this._itemInContext);
+            var dataId = $contextItem.find("[data-id]").first().attr("data-id");
+
+            if (dataId == null) {
+                dataId = $contextItem.attr("data-id");
             }
+
+            dataId = dataId == null ? "" : String(dataId).trim();
+            this._menu.find(".context-menu__link")
+                .attr("data-id", dataId)
+                .data("id", dataId);
         }
 
-        function positionMenu(e) {
-            clickCoords = getPosition(e);
-            clickCoordsX = clickCoords.x;
-            clickCoordsY = clickCoords.y;
+        /*
+         * Apenas um context menu deve permanecer aberto por vez, mesmo quando existem
+         * várias instâncias atendendo seletores diferentes na mesma página.
+         */
+        _show() {
+            $(".context-menu.context-menu--active")
+                .not(this._menu)
+                .removeClass("context-menu--active")
+                .attr("aria-hidden", "true")
+                .css({ left: "", top: "" });
 
-            menuWidth = menu.outerWidth() + 4;
-            menuHeight = menu.outerHeight() + 4;
+            this._menu
+                .addClass("context-menu--active")
+                .attr("aria-hidden", "false");
+        }
 
-            windowWidth = window.innerWidth;
-            windowHeight = window.innerHeight;
+        /* Fecha visualmente o menu e descarta a referência ao elemento em contexto. */
+        _hide() {
+            if (!this._menu) {
+                return;
+            }
 
-            if ((windowWidth - clickCoordsX) < menuWidth) {
-                $(menu).css("left", windowWidth - menuWidth + "px");
+            this._menu
+                .removeClass("context-menu--active")
+                .attr("aria-hidden", "true")
+                .css({ left: "", top: "" });
+
+            this._itemInContext = null;
+        }
+
+        /*
+         * clientX/clientY e innerWidth/innerHeight usam o mesmo sistema de coordenadas
+         * (viewport). Isso mantém o menu dentro da tela inclusive após scroll.
+         * O fallback baseado no elemento também permite posicionar corretamente quando
+         * o evento não fornecer coordenadas úteis.
+         */
+        _position(event, item) {
+            var margin = 4;
+            var x = typeof event.clientX === "number" ? event.clientX : 0;
+            var y = typeof event.clientY === "number" ? event.clientY : 0;
+
+            if (x === 0 && y === 0 && item && item.getBoundingClientRect) {
+                var rect = item.getBoundingClientRect();
+                x = rect.left;
+                y = rect.bottom;
+            }
+
+            var menuWidth = this._menu.outerWidth();
+            var menuHeight = this._menu.outerHeight();
+            var maxLeft = Math.max(margin, global.innerWidth - menuWidth - margin);
+            var maxTop = Math.max(margin, global.innerHeight - menuHeight - margin);
+
+            this._menu.css({
+                left: Math.min(Math.max(x, margin), maxLeft) + "px",
+                top: Math.min(Math.max(y, margin), maxTop) + "px"
+            });
+        }
+
+        /*
+         * Interações básicas de teclado: Escape fecha o menu e as setas percorrem
+         * os itens. Mantemos o comportamento pequeno e previsível sem criar um sistema
+         * de navegação mais complexo do que a biblioteca precisa.
+         */
+        _handleKeydown(event) {
+            if (!this._menu || !this._menu.hasClass("context-menu--active")) {
+                return;
+            }
+
+            if (event.key === "Escape" || event.keyCode === 27) {
+                event.preventDefault();
+                this._hide();
+                return;
+            }
+
+            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+                return;
+            }
+
+            var $items = this._menu.find(".context-menu__link");
+            if ($items.length === 0) {
+                return;
+            }
+
+            event.preventDefault();
+            var currentIndex = $items.index(document.activeElement);
+            var nextIndex;
+
+            if (event.key === "ArrowUp") {
+                nextIndex = currentIndex <= 0 ? $items.length - 1 : currentIndex - 1;
             } else {
-                $(menu).css("left", clickCoordsX + "px");
+                nextIndex = currentIndex >= $items.length - 1 ? 0 : currentIndex + 1;
             }
 
-            if ((windowHeight - clickCoordsY) < menuHeight) {
-                $(menu).css("top", clickCoordsY - menuHeight + 4 + "px");
-            } else {
-                $(menu).css("top", clickCoordsY + "px");
-            }
+            $items.eq(nextIndex).trigger("focus");
         }
-
-        function menuItemListener(link) {
-            //console.log(itemInContext);
-            //console.log("ID - " + $(itemInContext).find("*[data-id]").attr("data-id").trim() + "\nAction - " + link.getAttribute("data-action"));
-
-            //fireEvent($(itemInContext).find("*[data-id]").attr("data-id").trim(), link.getAttribute("data-action"));
-
-            toggleMenuOff();
-        }
-
-        init();
     }
-}
+
+    global.ContextMenu = ContextMenu;
+})(window);
